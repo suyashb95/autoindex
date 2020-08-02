@@ -11,23 +11,15 @@ from pdfminer.layout import LTChar, LTTextBox
 from statistics import mean
 
 import re
-import pprint
+import constants
+import click
 
-Bookmark = Dict[LTTextBox, Bookmark]
+Bookmark = Dict[LTTextBox, 'Bookmark']
 
-PAGE_NUMBER_REGEX = r" (\d+)$"
+def toc_page_numbers_callback(ctx, param, value):
+    return list(range(value[0], value[1] + 1))
 
-TOC_LA_PARAMS = LAParams(
-    char_margin=500.0,
-    line_margin=0.15
-)
-
-HEADER_FONT_SIZE_THRESHOLD = 0.4
-FONT_SIZE_THRESHOLD = 0.095
-BACKWARD_INDENT_OFFSET = 0.5
-
-
-def font_size(line) -> float:
+def font_size(line: LTTextBox) -> float:
     chars = list(filter(LTChar.__instancecheck__, line))
     return mean(list(map(lambda x: x.height, chars)))
 
@@ -36,14 +28,24 @@ def construct_top_level_bookmarks(bookmarks: List[LTTextBox]) -> Bookmark:
         bookmark: {} for bookmark in bookmarks
     }
 
-def construct_bookmark_tree_using_fontsize(bookmarks: List[LTTextBox], running_index: int) -> (Bookmark, int):
+def construct_bookmark_tree_using_fontsize(
+        bookmarks: List[LTTextBox], 
+        running_index: int,
+        header_fontsize_threshold: float,
+        topic_fontsize_threshold: float
+        ) -> (Bookmark, int):
     current_level_nodes = {}
     while running_index < len(bookmarks) - 1:
         current_node = bookmarks[running_index]
         children = {}
-        if font_size(current_node) - font_size(bookmarks[running_index + 1]) >= HEADER_FONT_SIZE_THRESHOLD:
-            children, running_index = construct_bookmark_tree_using_fontsize(bookmarks, running_index + 1)
-        elif abs(font_size(bookmarks[running_index + 1]) - font_size(current_node)) >= FONT_SIZE_THRESHOLD:
+        if font_size(current_node) - font_size(bookmarks[running_index + 1]) >= header_fontsize_threshold:
+            children, running_index = construct_bookmark_tree_using_fontsize(
+                bookmarks, 
+                running_index + 1,
+                header_fontsize_threshold, 
+                topic_fontsize_threshold
+            )
+        elif abs(font_size(bookmarks[running_index + 1]) - font_size(current_node)) >= topic_fontsize_threshold:
             current_level_nodes[current_node] = {}
             return current_level_nodes, running_index + 1
         else:
@@ -53,41 +55,66 @@ def construct_bookmark_tree_using_fontsize(bookmarks: List[LTTextBox], running_i
 
 def add_bookmarks(bookmarks: List, pdf, offset=0, parent=None):
     for bookmark in bookmarks:
-        content = re.search(PAGE_NUMBER_REGEX, bookmark.get_text())
+        content = re.search(constants.PAGE_NUMBER_REGEX, bookmark.get_text())
         name = content.string[:content.start()].strip()
         location = int(content[0].strip()) + offset          
         new_parent = pdf.addBookmark(name, location, parent=parent)
         add_bookmarks(bookmarks[bookmark], pdf, offset, new_parent)
     return pdf
 
+@click.command()
+@click.option('--input', '-i')
+@click.option('--output', '-o')
+@click.option('--toc-page-numbers', '--toc', nargs=2, type=int, callback=toc_page_numbers_callback)
+@click.option('--nest-using-fontsize', type=bool, default=False)
+@click.option('--offset', type=int, default=0)
+@click.option('--char-margin', type=float, default=constants.DEFAULT_CHAR_MARGIN)
+@click.option('--line-margin', type=float, default=constants.DEFAULT_LINE_MARGIN)
+@click.option('--header-fontsize-threshold', type=float, default=constants.DEFAULT_HEADER_FONTSIZE_THREADHOLD)
+@click.option('--topic-fontsize-delta', type=float, default=constants.DEFAULT_FONTSIZE_THRESHOLD)
 def add_index(
-        input_filename: str, 
-        output_filename: str, 
+        input: str, 
+        output: str, 
         toc_page_numbers: List[int], 
-        offset: int,
-        nest_using_fontsize: bool = False) -> None:
+        offset: int = 0,
+        nest_using_fontsize: bool = False,
+        char_margin: float = constants.DEFAULT_CHAR_MARGIN,
+        line_margin: float = constants.DEFAULT_LINE_MARGIN,
+        header_fontsize_threshold: float = constants.DEFAULT_HEADER_FONTSIZE_THREADHOLD,
+        topic_fontsize_delta: float = constants.DEFAULT_FONTSIZE_THRESHOLD
+        ) -> None:
+
+    la_params = LAParams(
+        char_margin=char_margin,
+        line_margin=line_margin
+    )
+
     output_file_writer = PdfFileWriter()
-    input_file = PdfFileReader(input_filename)
+    input_file = PdfFileReader(input)
     for page in input_file.pages:
         output_file_writer.addPage(page)
 
     content_pages = extract_pages(
-        pdf_file=input_filename,
+        pdf_file=input,
         page_numbers=toc_page_numbers,
-        laparams=TOC_LA_PARAMS
+        laparams=la_params
     )
+
     content_text = [text_box for page in content_pages for text_box in page]
     content_text = filter(LTTextBox.__instancecheck__, content_text)
     content_lines = [line for content in content_text for line in content]
 
-    content_lines = list(filter(lambda x: re.search(PAGE_NUMBER_REGEX, x.get_text().strip()), content_lines))
+    content_lines = list(filter(lambda x: re.search(constants.PAGE_NUMBER_REGEX, x.get_text().strip()), content_lines))
 
     if nest_using_fontsize:
-        bookmarks = construct_bookmark_tree_using_fontsize(content_lines, 0)[0]
+        bookmarks = construct_bookmark_tree_using_fontsize(content_lines, 0, header_fontsize_threshold, topic_fontsize_delta)[0]
     else:
         bookmarks = construct_top_level_bookmarks(content_lines)
     
     output_file_writer = add_bookmarks(bookmarks, output_file_writer, offset, None)
 
-    with open(output_filename, 'wb') as output_file:
+    with open(output, 'wb') as output_file:
         output_file_writer.write(output_file)
+
+if __name__ == '__main__':
+    add_index()
