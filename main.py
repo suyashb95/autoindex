@@ -62,16 +62,41 @@ def add_bookmarks(bookmarks: List, pdf, offset=0, parent=None):
         add_bookmarks(bookmarks[bookmark], pdf, offset, new_parent)
     return pdf
 
+
 @click.command()
-@click.option('--input', '-i')
-@click.option('--output', '-o')
-@click.option('--toc-page-numbers', '--toc', nargs=2, type=int, callback=toc_page_numbers_callback)
-@click.option('--nest-using-fontsize', type=bool, default=False)
-@click.option('--offset', type=int, default=0)
-@click.option('--char-margin', type=float, default=constants.DEFAULT_CHAR_MARGIN)
-@click.option('--line-margin', type=float, default=constants.DEFAULT_LINE_MARGIN)
-@click.option('--header-fontsize-threshold', type=float, default=constants.DEFAULT_HEADER_FONTSIZE_THREADHOLD)
-@click.option('--topic-fontsize-delta', type=float, default=constants.DEFAULT_FONTSIZE_THRESHOLD)
+@click.option('--input', '-i', help='input file name')
+@click.option('--output', '-o', help='output file name')
+@click.option(
+    '--toc-page-numbers', '--toc',
+    nargs=2, type=int, callback=toc_page_numbers_callback,
+    help='range of pages (from, to) having the table of contents'
+)
+@click.option(
+    '--nest-using-fontsize', 
+    type=bool, default=False,
+    help='flag to try and figure out nested bookmarks using font sizes'
+)
+@click.option('--offset', type=int, default=0, help='offset to add to the page numbers from the table of contents')
+@click.option(
+    '--char-margin', 
+    type=float, default=constants.DEFAULT_CHAR_MARGIN,
+    help='spacing between characters to be considered as a part of the same line'
+)
+@click.option(
+    '--line-margin', 
+    type=float, default=constants.DEFAULT_LINE_MARGIN,
+    help='spacing between lines to be considered as a part of the same text box'
+)
+@click.option(
+    '--header-fontsize-threshold', 
+    type=float, default=constants.DEFAULT_HEADER_FONTSIZE_THREADHOLD,
+    help='minimum difference between font sizes for a line to be considered as header'
+)
+@click.option(
+    '--topic-fontsize-delta', 
+    type=float, default=constants.DEFAULT_FONTSIZE_THRESHOLD,
+    help='font size delta for lines to be considered as a part of the same parent header'
+)
 def add_index(
         input: str, 
         output: str, 
