@@ -84,6 +84,7 @@ def add_bookmarks(bookmarks: List, pdf, offset=0, parent=None):
 	for bookmark in bookmarks:
 		content = re.search(constants.PAGE_NUMBER_REGEX, bookmark.get_text())
 		name = content.string[:content.start()].strip()
+		name = re.sub(constants.DETECT_SPECIAL_CHARS, '', name)
 		location = int(content[0].strip()) + offset
 		new_parent = pdf.addBookmark(name, location, parent=parent)
 		add_bookmarks(bookmarks[bookmark], pdf, offset, new_parent)
