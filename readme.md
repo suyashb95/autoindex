@@ -9,9 +9,14 @@ Options:
   -i, --input TEXT                input file name
   -o, --output TEXT               output file name
   --toc-page-numbers, --toc INTEGER...
-                                  range of pages having the table of contents
+                                  range of pages (from, to) having the table 
+                                  of contents
+
   --nest-using-fontsize BOOLEAN   flag to try and figure out nested bookmarks
                                   using font sizes
+
+  --nest-using-indents BOOLEAN    flag to try and figure out nested bookmarks
+                                  using indents
 
   --offset INTEGER                offset to add to the page numbers from the
                                   table of contents
@@ -26,14 +31,22 @@ Options:
                                   minimum difference between font sizes for a
                                   line to be considered as header
 
-  --topic-fontsize-delta FLOAT    font size delta for lines to be considered
+  --topic-fontsize-threshold FLOAT
+                                  font size delta for lines to be considered
+                                  as a part of the same parent header
+
+  --header-indent-threshold FLOAT
+                                  indent difference for a line to be
+                                  considered as header
+
+  --topic-indent-threshold FLOAT  indent difference for lines to be considered
                                   as a part of the same parent header
 
   --help                          Show this message and exit.
   ```
 
 ### To Do
-- [ ] Detect nesting using indents
+- [x] Detect nesting using indents
 - [ ] Output an intermediate YAML containing bookmarks
 that can be fixed before being added to the file
 - [ ] Add support for EPUB/DjVu
