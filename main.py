@@ -4,12 +4,10 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.high_level import extract_pages
-from io import StringIO
 from PyPDF2 import PdfFileWriter, PdfFileReader
 from typing import List, Dict
 from pdfminer.layout import LTChar, LTTextBox
-from statistics import mean
-from functools import cmp_to_key
+from collections import Counter
 
 import re
 import constants
@@ -20,10 +18,6 @@ Bookmark = Dict[LTTextBox, 'Bookmark']
 
 def toc_page_numbers_callback(ctx, param, value):
 	return list(range(value[0], value[1] + 1))
-
-def font_size(line: LTTextBox) -> float:
-	chars = list(filter(LTChar.__instancecheck__, line))
-	return chars[0].height
 
 def construct_top_level_bookmarks(bookmarks: List[LTTextBox]) -> Bookmark:
 	return {
@@ -65,14 +59,14 @@ def construct_bookmark_tree_using_fontsize(
 	while running_index < len(bookmarks) - 1:
 		current_node = bookmarks[running_index]
 		children = {}
-		if font_size(current_node) - font_size(bookmarks[running_index + 1]) >= header_fontsize_threshold:
+		if list(current_node)[0].height - list(bookmarks[running_index + 1])[0].height >= header_fontsize_threshold:
 			children, running_index = construct_bookmark_tree_using_fontsize(
 				bookmarks, 
 				running_index + 1,
 				header_fontsize_threshold,
 				topic_fontsize_threshold
 			)
-		elif abs(font_size(bookmarks[running_index + 1]) - font_size(current_node)) >= topic_fontsize_threshold:
+		elif abs(list(bookmarks[running_index + 1])[0].height - list(current_node)[0].height) >= topic_fontsize_threshold:
 			current_level_nodes[current_node] = {}
 			return current_level_nodes, running_index + 1
 		else:
@@ -122,12 +116,12 @@ def add_bookmarks(bookmarks: List, pdf, offset=0, parent=None):
 @click.option(
 	'--header-fontsize-threshold', 
 	type=float, default=constants.DEFAULT_HEADER_FONTSIZE_THRESHOLD,
-	help='minimum difference between font sizes for a line to be considered as header'
+	help='font size difference for a line to be considered as header'
 )
 @click.option(
 	'--topic-fontsize-threshold', 
 	type=float, default=constants.DEFAULT_TOPIC_FONTSIZE_THRESHOLD,
-	help='font size delta for lines to be considered as a part of the same parent header'
+	help='font size difference for lines to be considered as a part of the same parent header'
 )
 @click.option(
 	'--header-indent-threshold', 
@@ -138,6 +132,11 @@ def add_bookmarks(bookmarks: List, pdf, offset=0, parent=None):
 	'--topic-indent-threshold', 
 	type=float, default=constants.DEFAULT_TOPIC_INDENT_THRESHOLD,
 	help='indent difference for lines to be considered as a part of the same parent header'
+)
+@click.option(
+	'--diagnose', '-d',
+	type=bool, default=False,
+	help='print the most common font sizes and line starting points to help choose values for fontsize/indent thresholds'
 )
 def add_index(
 		input: str, 
@@ -151,7 +150,8 @@ def add_index(
 		header_fontsize_threshold: float = constants.DEFAULT_HEADER_FONTSIZE_THRESHOLD,
 		topic_fontsize_threshold: float = constants.DEFAULT_TOPIC_FONTSIZE_THRESHOLD,
 		header_indent_threshold: float = constants.DEFAULT_HEADER_INDENT_THRESHOLD,
-		topic_indent_threshold: float = constants.DEFAULT_TOPIC_INDENT_THRESHOLD
+		topic_indent_threshold: float = constants.DEFAULT_TOPIC_INDENT_THRESHOLD,
+		diagnose: bool = False
 		) -> None:
 
 	la_params = LAParams(
@@ -171,6 +171,10 @@ def add_index(
 		laparams=la_params
 	)
 
+	'''
+	filter by text boxes only and filter again 
+	for lines containing a page number at the end
+	'''
 	content_text = []
 	for page in content_pages:
 		for text_box in page:
@@ -184,13 +188,34 @@ def add_index(
 			if re.search(constants.PAGE_NUMBER_REGEX, line.get_text().strip()):
 				line.pageid = content.pageid
 				content_lines.append(line)
-		
-	content_lines = sorted(content_lines, key=lambda x: (x.pageid, -x.y0))
+	
+	'''
+	Sort by page number, Y co-ordinate because the order 
+	of parsing is not reliable 
+	'''
+	content_lines = sorted(content_lines, key=lambda line: (line.pageid, -line.y0))
+
+	if diagnose:
+		print('Common font sizes')
+		print(Counter([round(list(line)[0].height, 3) for line in content_lines]).most_common(3))
+		print('Common line starting points')
+		print(Counter([round(line.x0, 3) for line in content_lines]).most_common(3))
+		return
 
 	if nest_using_fontsize:
-		bookmarks = construct_bookmark_tree_using_fontsize(content_lines, 0, header_fontsize_threshold, topic_fontsize_threshold)[0]
+		bookmarks, bookmarks_processed = construct_bookmark_tree_using_fontsize(
+			content_lines, 
+			0,
+			header_fontsize_threshold, 
+			topic_fontsize_threshold
+		)
 	elif nest_using_indents:
-		bookmarks = construct_bookmark_tree_using_indents(content_lines, 0, header_indent_threshold, topic_indent_threshold)[0]
+		bookmarks, bookmarks_processed = construct_bookmark_tree_using_indents(
+			content_lines, 
+			0, 
+			header_indent_threshold, 
+			topic_indent_threshold
+		)
 	else:
 		bookmarks = construct_top_level_bookmarks(content_lines)
 	
