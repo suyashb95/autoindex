@@ -8,10 +8,10 @@ from PyPDF2 import PdfFileWriter, PdfFileReader
 from typing import List, Dict
 from pdfminer.layout import LTChar, LTTextBox
 from collections import Counter
-from lib.bookmarks import construct_bookmark_tree_using_fontsize
-from lib.bookmarks import construct_bookmark_tree_using_indents
-from lib.bookmarks import construct_top_level_bookmarks
-from lib.bookmarks import add_bookmarks
+from modules.bookmarks import construct_bookmark_tree_using_fontsize
+from modules.bookmarks import construct_bookmark_tree_using_indents
+from modules.bookmarks import construct_top_level_bookmarks
+from modules.bookmarks import add_bookmarks
 
 import re
 import constants
