@@ -2,20 +2,46 @@
 
 A Python project that automatically adds an index/bookmarks/outlines to a PDF
 
+### Usage
+
+autoindex works well with PDFs that have clearly outlined bookmarks with numerical page numbers and no images. 
+Nesting can be detected by differences in font sizes or the indents in bookmarks. In both cases, the thresholds
+to detect child bookmarks have to be configured. The `-d/--diagnose` option can be useful for this. It prints the 
+most common font sizes, line starting coordinates which can be used to figure out the threshold values
+
+Most PDFs have an offset between the actual page number and what's shown in the reader. That can be specified
+using the `--offset` option 
+
+Scanned PDFs are not supported yet
+
+### Limitations
+
+ - Multi line bookmarks might not be extracted completely. 
+ - PDFs meant for printing have different offsets for text on odd/even pages which can cause problems while detecting nesting
+
+### Options
+
 ```
-Usage: main.py [OPTIONS]
+Usage: cli.py [OPTIONS]
 
 Options:
-  -i, --input TEXT                input file name
-  -o, --output TEXT               output file name
+  -i, --input TEXT                input file name  [required]
+  -o, --output TEXT               output file name. If not provided, defaults
+                                  to the input file name suffixed with
+                                  "-bookmarked"
+
   --toc-page-numbers, --toc INTEGER...
-                                  range of pages (from, to) having the table 
+                                  range of pages (from, to) having the table
                                   of contents
 
-  --nest-using-fontsize BOOLEAN   flag to try and figure out nested bookmarks
+  -d, --diagnose                  print the most common font sizes and line
+                                  starting points to help choose values for
+                                  fontsize/indent thresholds
+
+  --nest-using-fontsize           flag to try and figure out nested bookmarks
                                   using font sizes
 
-  --nest-using-indents BOOLEAN    flag to try and figure out nested bookmarks
+  --nest-using-indents            flag to try and figure out nested bookmarks
                                   using indents
 
   --offset INTEGER                offset to add to the page numbers from the
@@ -28,12 +54,13 @@ Options:
                                   part of the same text box
 
   --header-fontsize-threshold FLOAT
-                                  minimum difference between font sizes for a
-                                  line to be considered as header
+                                  font size difference for a line to be
+                                  considered as header
 
   --topic-fontsize-threshold FLOAT
-                                  font size delta for lines to be considered
-                                  as a part of the same parent header
+                                  font size difference for lines to be
+                                  considered as a part of the same parent
+                                  header
 
   --header-indent-threshold FLOAT
                                   indent difference for a line to be
