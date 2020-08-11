@@ -1,6 +1,17 @@
-### autoindex
+### autoindex 📑
 
 A Python project that automatically adds an index/bookmarks/outlines to a PDF
+
+### Installation
+
+#### Using Pip
+* Run `pip install autoindex`
+
+#### From Source
+* Clone the repo or download the zip
+* `cd` to the folder
+* Run `pip install -r "requirements.txt"`
+* Run `python autoindex.py [OPTIONS]`
 
 ### Usage
 
@@ -22,7 +33,7 @@ Scanned PDFs are not supported yet
 ### Options
 
 ```
-Usage: cli.py [OPTIONS]
+Usage: autoindex.py [OPTIONS]
 
 Options:
   -i, --input TEXT                input file name  [required]

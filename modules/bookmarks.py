@@ -25,9 +25,9 @@ def construct_bookmark_tree_using_indents(
 		if current_node.x0 - bookmarks[running_index + 1].x0 >= header_indent_threshold:
 			children, running_index = construct_bookmark_tree_using_indents(
 				bookmarks, 
-				running_index + 1,
 				header_fontsize_threshold, 
-				topic_fontsize_threshold
+				topic_fontsize_threshold,
+				running_index + 1,
 			)
 		elif bookmarks[running_index + 1].x0 - current_node.x0 >= topic_indent_threshold:
 			current_level_nodes[current_node] = {}
@@ -50,9 +50,9 @@ def construct_bookmark_tree_using_fontsize(
 		if list(current_node)[0].height - list(bookmarks[running_index + 1])[0].height >= header_fontsize_threshold:
 			children, running_index = construct_bookmark_tree_using_fontsize(
 				bookmarks, 
-				running_index + 1,
 				header_fontsize_threshold,
-				topic_fontsize_threshold
+				topic_fontsize_threshold,
+				running_index + 1				
 			)
 		elif abs(list(bookmarks[running_index + 1])[0].height - list(current_node)[0].height) >= topic_fontsize_threshold:
 			current_level_nodes[current_node] = {}

@@ -76,7 +76,7 @@ def toc_page_numbers_callback(ctx, param, value):
 	'--topic-indent-threshold', 
 	type=float, default=constants.DEFAULT_TOPIC_INDENT_THRESHOLD,
 	help='indent difference for lines to be considered as a part of the same parent header')
-def add_index(
+def cli(
 		input: str, 
 		output: str,  
 		toc_page_numbers: List[int],
@@ -161,4 +161,4 @@ def add_index(
 		output_file_writer.write(output_file)
 
 if __name__ == '__main__':
-	add_index()
+	cli()
