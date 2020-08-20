@@ -8,10 +8,8 @@ from PyPDF2 import PdfFileWriter, PdfFileReader
 from typing import List, Dict
 from pdfminer.layout import LTChar, LTTextBox
 from collections import Counter
-from modules.bookmarks import construct_bookmark_tree_using_fontsize
-from modules.bookmarks import construct_bookmark_tree_using_indents
-from modules.bookmarks import construct_top_level_bookmarks
-from modules.bookmarks import add_bookmarks
+from modules.bookmarks import construct_bookmark_tree
+from modules.bookmarks import add_bookmarks, get_fontsize, get_indent
 
 import re
 import constants
@@ -24,6 +22,8 @@ def output_filename_callback(ctx, param, value):
 	return value
 
 def toc_page_numbers_callback(ctx, param, value):
+	if len(value) is not 2:
+		ctx.fail('A range of ToC pages should be specified using --toc or --toc-page-numbers')
 	return list(range(value[0], value[1] + 1))
 
 
@@ -141,19 +141,21 @@ def cli(
 		return
 
 	if nest_using_fontsize:
-		bookmarks, bookmarks_processed = construct_bookmark_tree_using_fontsize(
+		bookmarks, bookmarks_processed = construct_bookmark_tree(
 			content_lines, 
 			header_fontsize_threshold, 
-			topic_fontsize_threshold
+			topic_fontsize_threshold,
+			get_fontsize
 		)
 	elif nest_using_indents:
-		bookmarks, bookmarks_processed = construct_bookmark_tree_using_indents(
+		bookmarks, bookmarks_processed = construct_bookmark_tree(
 			content_lines, 
 			header_indent_threshold, 
-			topic_indent_threshold
+			topic_indent_threshold,
+			get_indent
 		)
 	else:
-		bookmarks = construct_top_level_bookmarks(content_lines)
+		bookmarks, bookmarks_processed = construct_bookmark_tree(content_lines)
 	
 	output_file_writer = add_bookmarks(bookmarks, output_file_writer, offset, None)
 

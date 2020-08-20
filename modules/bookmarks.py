@@ -2,59 +2,37 @@ import re
 import constants
 
 from pdfminer.layout import LTTextBox
-from typing import List, Dict
+from typing import List, Dict, Callable
 
 
 Bookmark = Dict[LTTextBox, 'Bookmark']
 
-def construct_top_level_bookmarks(bookmarks: List[LTTextBox]) -> Bookmark:
-	return {
-		bookmark: {} for bookmark in bookmarks
-	}
+def get_fontsize(node: LTTextBox) -> float:
+	return list(node)[0].height
 
-def construct_bookmark_tree_using_indents(
+def get_indent(node: LTTextBox) -> float:
+	return node.x0
+
+def construct_bookmark_tree(
 		bookmarks: List[LTTextBox], 
-		header_indent_threshold: float,
-		topic_indent_threshold: float,
+		indent_threshold: float = 1.0,
+		indent_tolerance: float = 1.0,
+		indent_attribute: Callable = lambda x: 0,
 		running_index: int = 0,
 		) -> (Bookmark, int):
 	current_level_nodes = {}
 	while running_index < len(bookmarks) - 1:
 		current_node = bookmarks[running_index]
 		children = {}
-		if current_node.x0 - bookmarks[running_index + 1].x0 >= header_indent_threshold:
-			children, running_index = construct_bookmark_tree_using_indents(
+		if indent_attribute(current_node) - indent_attribute(bookmarks[running_index + 1]) >= indent_threshold:
+			children, running_index = construct_bookmark_tree(
 				bookmarks, 
-				header_fontsize_threshold, 
-				topic_fontsize_threshold,
+				indent_threshold, 
+				indent_tolerance,
+				indent_attribute,
 				running_index + 1,
 			)
-		elif bookmarks[running_index + 1].x0 - current_node.x0 >= topic_indent_threshold:
-			current_level_nodes[current_node] = {}
-			return current_level_nodes, running_index + 1
-		else:
-			running_index += 1
-		current_level_nodes[current_node] = children
-	return current_level_nodes, running_index
-
-def construct_bookmark_tree_using_fontsize(
-		bookmarks: List[LTTextBox], 
-		header_fontsize_threshold: float,
-		topic_fontsize_threshold: float,
-		running_index: int = 0,
-		) -> (Bookmark, int):
-	current_level_nodes = {}
-	while running_index < len(bookmarks) - 1:
-		current_node = bookmarks[running_index]
-		children = {}
-		if list(current_node)[0].height - list(bookmarks[running_index + 1])[0].height >= header_fontsize_threshold:
-			children, running_index = construct_bookmark_tree_using_fontsize(
-				bookmarks, 
-				header_fontsize_threshold,
-				topic_fontsize_threshold,
-				running_index + 1				
-			)
-		elif abs(list(bookmarks[running_index + 1])[0].height - list(current_node)[0].height) >= topic_fontsize_threshold:
+		elif indent_attribute(bookmarks[running_index + 1]) - indent_attribute(current_node) >= indent_tolerance:
 			current_level_nodes[current_node] = {}
 			return current_level_nodes, running_index + 1
 		else:
