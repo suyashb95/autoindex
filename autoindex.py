@@ -27,6 +27,7 @@ def toc_page_numbers_callback(ctx, param, value):
 	return list(range(value[0], value[1] + 1))
 
 
+
 @click.command()
 @click.option('--input', '-i', help='input file name', required=True)
 @click.option('--output', '-o', 
@@ -34,8 +35,8 @@ def toc_page_numbers_callback(ctx, param, value):
 	required=False, callback=output_filename_callback)
 @click.option(
 	'--toc-page-numbers', '--toc',
-	nargs=2, type=int, callback=toc_page_numbers_callback,
-	help='range of pages (from, to) having the table of contents')
+	nargs=2, type=int, callback=toc_page_numbers_callback, required=True,
+	help='range of pages from, to having the table of contents')
 @click.option(
 	'--diagnose', '-d',
 	default=False,

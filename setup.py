@@ -5,8 +5,9 @@ with open('readme.md', 'r') as readme:
 
 setup(
     name='autoindex',
-    version='0.2.0',
+    version='0.3.0',
     py_modules=['autoindex'],
+    packages = ['', 'modules'],
     install_requires=[
         'Click',
         'pdfminer.six',
