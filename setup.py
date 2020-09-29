@@ -23,6 +23,6 @@ setup(
     keywords = ['PDF', 'PyPDF', 'pdfminer', 'bookmarks', 'cli'],
     entry_points='''
         [console_scripts]
-        autoindex=autoindex:cli
+        autoindex=autoindex.cli:cli
     ''',
 )
