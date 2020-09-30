@@ -1,5 +1,5 @@
-import click, constants
-from . import bookmarks
+import click
+from . import bookmarks, constants
 
 def output_filename_callback(ctx, param, value):
 	if not value:

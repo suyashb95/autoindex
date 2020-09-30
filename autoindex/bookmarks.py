@@ -1,11 +1,12 @@
 import re
-import constants
+
 
 from pdfminer.layout import LTTextBox, LAParams
 from pdfminer.high_level import extract_pages
 from typing import List, Dict, Callable
 from PyPDF2 import PdfFileWriter, PdfFileReader
 from collections import Counter
+from . import constants
 
 Bookmark = Dict[LTTextBox, 'Bookmark']
 
